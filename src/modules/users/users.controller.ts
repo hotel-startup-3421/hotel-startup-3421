@@ -1,34 +1,49 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Controller, Get, Put, Delete, UseGuards, Body, UseInterceptors, UploadedFile } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from "@nestjs/swagger";
+import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
+import { UsersService } from "./users.service";
+import { User } from "./entities/user.entity";
+import { CurrentUser } from "src/common/decorators/current-user.decorator";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { multerOptions } from "src/utils/multer";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
-@Controller('users')
+
+@ApiTags("Users")
+@ApiBearerAuth("JWT-auth")
+@UseGuards(JwtAuthGuard)
+@Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Get("me")
+  @ApiOperation({ summary: "Mening profilim" })
+  getMe(@CurrentUser() currentUser: User) {
+    return this.usersService.findOne(currentUser.id);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @Put("profile")
+  @ApiOperation({ summary: "Profilni yangilash" })
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(FileInterceptor("avatar", multerOptions))
+  updateProfile(
+    @CurrentUser() currentUser: User,
+    @Body() dto: UpdateProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.usersService.updateProfile(currentUser.id, dto, file?.filename);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  @Put("change-password")
+  @ApiOperation({ summary: "Parolni almashtirish" })
+  changePassword(@CurrentUser() currentUser: User, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(currentUser.id, dto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @Delete("me")
+  @ApiOperation({ summary: "Profilni o'chirish" })
+  remove(@CurrentUser() currentUser: User) {
+    return this.usersService.remove(currentUser.id);
   }
 }
