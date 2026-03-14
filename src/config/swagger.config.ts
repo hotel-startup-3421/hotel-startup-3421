@@ -1,8 +1,8 @@
 import { DocumentBuilder } from "@nestjs/swagger";
 
 export const swaggerConfig = new DocumentBuilder()
-  .setTitle("hh.uz")
-  .setDescription("hh.uz klonini yasash")
+  .setTitle("Visit Uzbekistan")
+  .setDescription("Visit Uzbekistan klonini yasash")
   .setVersion("1.0")
   .addBearerAuth(
     {
