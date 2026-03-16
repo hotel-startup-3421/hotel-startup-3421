@@ -5,7 +5,6 @@ import databaseConfig from "./config/database.config";
 import jwtConfig from "./config/jwt.config";
 import appConfig from "./config/app.config";
 import storageConfig from "./config/storage.config";
-
 import { MailModule } from "./modules/mail/mail.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -26,39 +25,45 @@ import { BookingsModule } from "./modules/bookings/bookings.module";
 import { TourBookingsModule } from "./modules/tour-bookings/tour-bookings.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
+import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { SearchModule } from "./modules/search/search.module";
 import { WishlistsModule } from "./modules/wishlists/wishlists.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { ChatModule } from "./modules/chat/chat.module";
 import { AdminModule } from "./modules/admin/admin.module";
-import { ReviewsModule } from "./modules/reviews/reviews.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, storageConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        storageConfig,
+      ],
     }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => config.getOrThrow<TypeOrmModuleOptions>("database"),
+      useFactory: (configService: ConfigService) =>
+        configService.getOrThrow<TypeOrmModuleOptions>("database"),
     }),
 
     MailModule,
     AuthModule,
     UsersModule,
-    CouponsModule,
     CategoriesModule,
     AttractionsModule,
     ToursModule,
     RestaurantsModule,
     GuidesModule,
     LocationsModule,
-    AmenitiesModule,
-    ImagesModule,
     PropertiesModule,
     RoomsModule,
+    AmenitiesModule,
+    ImagesModule,
     AvailabilityModule,
     PricingModule,
     BookingsModule,
@@ -66,12 +71,14 @@ import { ReviewsModule } from "./modules/reviews/reviews.module";
     PaymentsModule,
     ReviewsModule,
     RatingsModule,
-    SearchModule,
     WishlistsModule,
     NotificationsModule,
     ChatModule,
+    SearchModule,
+    CouponsModule,
     AdminModule,
   ],
+
   controllers: [],
   providers: [],
 })
