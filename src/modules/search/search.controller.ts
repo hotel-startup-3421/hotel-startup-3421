@@ -1,34 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SearchService } from './search.service';
-import { CreateSearchDto } from './dto/create-search.dto';
+import { SearchQueryDto } from './dto/create-search.dto';
 import { UpdateSearchDto } from './dto/update-search.dto';
 
+
+@ApiTags('Search')
 @Controller('search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
-
-  @Post()
-  create(@Body() createSearchDto: CreateSearchDto) {
-    return this.searchService.create(createSearchDto);
-  }
-
+  constructor(private readonly searchService:SearchService) {}
   @Get()
-  findAll() {
-    return this.searchService.findAll();
-  }
+  @ApiOperation({ summary: 'Global qidiruv'})
+  async search(@Query() queryDto:SearchQueryDto){
+  return this.searchService.executeSearch(queryDto.q);
+}
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.searchService.findOne(+id);
-  }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSearchDto: UpdateSearchDto) {
-    return this.searchService.update(+id, updateSearchDto);
+@Get('history')
+@ApiOperation({ summary:'qidiruv tarixi '})
+async findAll(){
+  return this.searchService.getHistory()
+}
+
+@Patch(':id')
+@ApiOperation({ summary: 'Tarixni tahrirlash'})
+async UpdateSearchDto(@Param('id',ParseIntPipe) id:number,@Body() updateSearchDto: UpdateSearchDto) {
+  return this.searchService.deleteHistory
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.searchService.remove(+id);
+  @ApiOperation({summary:'Tarixni o`chirish'})
+  async remove(@Param('id',ParseIntPipe) id:number){
+    return this.searchService.deleteHistory
   }
+
 }
