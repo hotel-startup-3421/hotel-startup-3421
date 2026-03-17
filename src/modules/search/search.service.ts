@@ -1,26 +1,41 @@
-import { Injectable } from '@nestjs/common';
-import { CreateSearchDto } from './dto/create-search.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { SearchEntity } from './entities/search.entity';
 import { UpdateSearchDto } from './dto/update-search.dto';
 
 @Injectable()
 export class SearchService {
-  create(createSearchDto: CreateSearchDto) {
-    return 'This action adds a new search';
+  constructor(
+    @InjectRepository(SearchEntity)
+    private readonly searchRepository: Repository<SearchEntity>,
+  ) {}
+
+  async executeSearch(query: string) {
+    const log = this.searchRepository.create({ query });
+    await this.searchRepository.save(log);
+
+    return {
+      query,
+      results: [], 
+      message: "Qidiruv muvaffaqiyatli bajarildi"
+    };
   }
 
-  findAll() {
-    return `This action returns all search`;
+  async getHistory() {
+    return await this.searchRepository.find({ order: { createdAt: 'DESC' } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} search`;
+  async updateHistory(id: number, updateSearchDto: UpdateSearchDto) {
+    const history = await this.searchRepository.findOne({ where: { id } });
+    if (!history) throw new NotFoundException("Tarix topilmadi");
+    Object.assign(history, updateSearchDto);
+    return await this.searchRepository.save(history);
   }
 
-  update(id: number, updateSearchDto: UpdateSearchDto) {
-    return `This action updates a #${id} search`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} search`;
+  async deleteHistory(id: number) {
+    const result = await this.searchRepository.delete(id);
+    if (result.affected === 0) throw new NotFoundException("ID topilmadi");
+    return { success: true };
   }
 }
