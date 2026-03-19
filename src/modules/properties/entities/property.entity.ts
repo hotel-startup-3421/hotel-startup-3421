@@ -1,1 +1,3 @@
-export class Property {}
+export class Property {
+  isVerified: any;
+}

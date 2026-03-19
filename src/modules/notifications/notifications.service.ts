@@ -12,7 +12,7 @@ export class NotificationsService {
 
   create(createNotificationDto: CreateNotificationDto): NotificationEntity {
 
-    const notification: NotificationEntity = {
+    const notification: NotificationEntity ={
       id: Date.now().toString(),
       ...createNotificationDto,
       isRead: false,
