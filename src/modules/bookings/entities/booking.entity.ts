@@ -1,3 +1,30 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+import { BookingStatus } from 'src/common/enums/booking-status.enum';
+
+@Entity('bookings')
 export class Booking {
-  status: import("c:/Users/User/Desktop/hotel-startup-3421/src/common/enums/booking-status.enum").BookingStatus;
+
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({
+    type: 'enum',
+    enum: BookingStatus,
+    default: BookingStatus.PENDING,
+  })
+  status: BookingStatus;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
 }
