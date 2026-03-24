@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Between, ILike } from "typeorm";
+import { Repository, Between } from "typeorm";
 import { User } from "../users/entities/user.entity";
 import { Booking } from "../bookings/entities/booking.entity";
 import { Payment } from "../payments/entities/payment.entity";
@@ -21,12 +21,12 @@ import {
   AdminBanUserDto,
   AdminUpdateBookingDto,
   AdminVerifyPropertyDto,
+  AdminPaginationDto,
 } from "./dto/admin.dto";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
 import { PaymentStatus } from "../../common/enums/payment-status.enum";
-import { StatsPeriod } from "src/common/enums/admin-action.enum";
-import { paginateQuery } from "src/utils/pagination.util";
+import { StatsPeriod } from "../../common/enums/admin-action.enum";
 
 @Injectable()
 export class AdminService {
@@ -66,15 +66,15 @@ export class AdminService {
     ] = await Promise.all([
       this.userRepo.count(),
       this.userRepo.count({
-        where: { createdAt: Between(this.startOfDay(), new Date()) },
+        where: { createdAt: Between(this.startOfDay(), new Date()) } as any,
       }),
-      this.userRepo.count({ where: { isActive: true } }),
+      this.userRepo.count({ where: { isActive: true } as any }),
       this.bookingRepo.count(),
       this.bookingRepo.count({ where: { status: BookingStatus.PENDING } }),
       this.bookingRepo.count({ where: { status: BookingStatus.CONFIRMED } }),
       this.bookingRepo.count({ where: { status: BookingStatus.CANCELLED } }),
       this.propertyRepo.count(),
-      this.propertyRepo.count({ where: { isVerified: false } }),
+      this.propertyRepo.count({ where: { isVerified: false } as any }),
       this.reviewRepo.count(),
     ]);
 
@@ -140,12 +140,9 @@ export class AdminService {
   // ─── Users ─────────────────────────────────────────────────────────────────
 
   async getAllUsers(filter: AdminUsersFilterDto) {
-    const { skip, take } = paginateQuery(filter);
-
-    const where: Record<string, unknown> = {};
-    if (filter.role) where.role = filter.role;
-    if (filter.isActive !== undefined) where.isActive = filter.isActive;
-    if (filter.isVerified !== undefined) where.isVerified = filter.isVerified;
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     const qb = this.userRepo.createQueryBuilder("user");
 
@@ -155,15 +152,20 @@ export class AdminService {
         { s: `%${filter.search}%` },
       );
     } else {
-      qb.where(where);
+      if (filter.role) qb.andWhere("user.role = :role", { role: filter.role });
+      if (filter.isActive !== undefined)
+        qb.andWhere("user.isActive = :isActive", { isActive: filter.isActive });
+      if (filter.isVerified !== undefined)
+        qb.andWhere("user.isVerified = :isVerified", { isVerified: filter.isVerified });
     }
 
     const [data, total] = await qb
+      .orderBy("user.createdAt", "DESC")
       .skip(skip)
-      .take(take)
+      .take(limit)
       .getManyAndCount();
 
-    return this.buildPaginated(data, total, filter);
+    return this.buildPaginated(data, total, page, limit);
   }
 
   async getUserById(id: string) {
@@ -182,16 +184,15 @@ export class AdminService {
     const user = await this.getUserById(id);
     if (user.id === adminId)
       throw new ForbiddenException("O'zingizni ban qila olmaysiz");
-    if (user.role === UserRole.ADMIN)
+    if ((user as any).role === UserRole.ADMIN)
       throw new ForbiddenException("Admin foydalanuvchini ban qilib bo'lmaydi");
-
-    user.isActive = false;
+    (user as any).isActive = false;
     return this.userRepo.save(user);
   }
 
   async unbanUser(id: string) {
     const user = await this.getUserById(id);
-    user.isActive = true;
+    (user as any).isActive = true;
     return this.userRepo.save(user);
   }
 
@@ -199,7 +200,7 @@ export class AdminService {
     const user = await this.getUserById(id);
     if (user.id === adminId)
       throw new ForbiddenException("O'zingizni o'chira olmaysiz");
-    if (user.role === UserRole.ADMIN)
+    if ((user as any).role === UserRole.ADMIN)
       throw new ForbiddenException("Admin foydalanuvchini o'chirib bo'lmaydi");
     await this.userRepo.remove(user);
     return { message: "Foydalanuvchi o'chirildi" };
@@ -208,16 +209,22 @@ export class AdminService {
   // ─── Bookings ──────────────────────────────────────────────────────────────
 
   async getAllBookings(filter: AdminBookingsFilterDto) {
-    const { skip, take } = paginateQuery(filter);
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 10;
+    const skip = (page - 1) * limit;
+
     const qb = this.bookingRepo
       .createQueryBuilder("booking")
       .leftJoinAndSelect("booking.user", "user")
       .leftJoinAndSelect("booking.room", "room")
       .leftJoinAndSelect("room.property", "property");
 
-    if (filter.status) qb.andWhere("booking.status = :status", { status: filter.status });
-    if (filter.fromDate) qb.andWhere("booking.checkIn >= :from", { from: filter.fromDate });
-    if (filter.toDate) qb.andWhere("booking.checkOut <= :to", { to: filter.toDate });
+    if (filter.status)
+      qb.andWhere("booking.status = :status", { status: filter.status });
+    if (filter.fromDate)
+      qb.andWhere("booking.checkIn >= :from", { from: filter.fromDate });
+    if (filter.toDate)
+      qb.andWhere("booking.checkOut <= :to", { to: filter.toDate });
     if (filter.search) {
       qb.andWhere(
         "user.firstName ILIKE :s OR user.email ILIKE :s OR property.name ILIKE :s",
@@ -228,10 +235,10 @@ export class AdminService {
     const [data, total] = await qb
       .orderBy("booking.createdAt", "DESC")
       .skip(skip)
-      .take(take)
+      .take(limit)
       .getManyAndCount();
 
-    return this.buildPaginated(data, total, filter);
+    return this.buildPaginated(data, total, page, limit);
   }
 
   async getBookingById(id: string) {
@@ -260,23 +267,29 @@ export class AdminService {
   // ─── Payments ──────────────────────────────────────────────────────────────
 
   async getAllPayments(filter: AdminPaymentsFilterDto) {
-    const { skip, take } = paginateQuery(filter);
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 10;
+    const skip = (page - 1) * limit;
+
     const qb = this.paymentRepo
       .createQueryBuilder("payment")
       .leftJoinAndSelect("payment.user", "user")
       .leftJoinAndSelect("payment.booking", "booking");
 
-    if (filter.status) qb.andWhere("payment.status = :status", { status: filter.status });
-    if (filter.fromDate) qb.andWhere("payment.createdAt >= :from", { from: filter.fromDate });
-    if (filter.toDate) qb.andWhere("payment.createdAt <= :to", { to: filter.toDate });
+    if (filter.status)
+      qb.andWhere("payment.status = :status", { status: filter.status });
+    if (filter.fromDate)
+      qb.andWhere("payment.createdAt >= :from", { from: filter.fromDate });
+    if (filter.toDate)
+      qb.andWhere("payment.createdAt <= :to", { to: filter.toDate });
 
     const [data, total] = await qb
       .orderBy("payment.createdAt", "DESC")
       .skip(skip)
-      .take(take)
+      .take(limit)
       .getManyAndCount();
 
-    return this.buildPaginated(data, total, filter);
+    return this.buildPaginated(data, total, page, limit);
   }
 
   async refundPayment(id: string) {
@@ -291,7 +304,10 @@ export class AdminService {
   // ─── Properties ────────────────────────────────────────────────────────────
 
   async getAllProperties(filter: AdminPropertiesFilterDto) {
-    const { skip, take } = paginateQuery(filter);
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 10;
+    const skip = (page - 1) * limit;
+
     const qb = this.propertyRepo
       .createQueryBuilder("property")
       .leftJoinAndSelect("property.owner", "owner");
@@ -299,21 +315,24 @@ export class AdminService {
     if (filter.isVerified !== undefined)
       qb.andWhere("property.isVerified = :v", { v: filter.isVerified });
     if (filter.search)
-      qb.andWhere("property.name ILIKE :s OR owner.email ILIKE :s", { s: `%${filter.search}%` });
+      qb.andWhere(
+        "property.name ILIKE :s OR owner.email ILIKE :s",
+        { s: `%${filter.search}%` },
+      );
 
     const [data, total] = await qb
       .orderBy("property.createdAt", "DESC")
       .skip(skip)
-      .take(take)
+      .take(limit)
       .getManyAndCount();
 
-    return this.buildPaginated(data, total, filter);
+    return this.buildPaginated(data, total, page, limit);
   }
 
   async verifyProperty(id: string, dto: AdminVerifyPropertyDto) {
     const property = await this.propertyRepo.findOne({ where: { id } as any });
     if (!property) throw new NotFoundException("Mulk topilmadi");
-    property.isVerified = dto.isVerified;
+    (property as any).isVerified = dto.isVerified;
     return this.propertyRepo.save(property);
   }
 
@@ -327,14 +346,18 @@ export class AdminService {
   // ─── Reviews ───────────────────────────────────────────────────────────────
 
   async getAllReviews(filter: AdminPaginationDto) {
-    const { skip, take } = paginateQuery(filter);
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 10;
+    const skip = (page - 1) * limit;
+
     const [data, total] = await this.reviewRepo.findAndCount({
       relations: ["user", "property"],
-      order: { createdAt: "DESC" },
+      order: { createdAt: "DESC" } as any,
       skip,
-      take,
+      take: limit,
     });
-    return this.buildPaginated(data, total, filter);
+
+    return this.buildPaginated(data, total, page, limit);
   }
 
   async deleteReview(id: string) {
@@ -349,10 +372,9 @@ export class AdminService {
   private buildPaginated<T>(
     data: T[],
     total: number,
-    filter: { page?: number; limit?: number },
+    page: number,
+    limit: number,
   ) {
-    const page = filter.page ?? 1;
-    const limit = filter.limit ?? 10;
     const totalPages = Math.ceil(total / limit);
     return {
       data,
@@ -395,10 +417,4 @@ export class AdminService {
     d.setHours(0, 0, 0, 0);
     return d;
   }
-}
-
-// ─── Dummy import to keep TS happy (replace with actual pagination util) ─────
-interface AdminPaginationDto {
-  page?: number;
-  limit?: number;
 }
