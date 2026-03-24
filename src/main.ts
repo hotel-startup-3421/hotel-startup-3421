@@ -12,14 +12,17 @@ import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Global API prefix
   app.setGlobalPrefix("api");
 
+  // CORS settings
   app.enableCors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
 
+  // Global validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -28,20 +31,35 @@ async function bootstrap() {
     }),
   );
 
+  // Static files (uploads)
   app.useStaticAssets(join(__dirname, "..", "uploads"), {
     prefix: "/uploads/",
   });
 
+  // Global filters
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor()); 
 
+  // Global interceptors
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+  );
+
+  // Swagger setup
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+
   SwaggerModule.setup("docs", app, document, {
-    swaggerOptions: { persistAuthorization: true },
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
   });
 
+  // Port
   const PORT = process.env.PORT || 4001;
+
   await app.listen(PORT);
-  console.log(`Server ishga tushdi: http://localhost:${PORT}/docs`);
+
+  console.log(`📄 Server ishlayabdi: http://localhost:${PORT}/docs`);
 }
+
 bootstrap();
