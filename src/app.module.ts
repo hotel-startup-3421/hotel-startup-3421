@@ -21,9 +21,7 @@ import { PropertiesModule } from "./modules/properties/properties.module";
 import { RoomsModule } from "./modules/rooms/rooms.module";
 import { AvailabilityModule } from "./modules/availability/availability.module";
 import { PricingModule } from "./modules/pricing/pricing.module";
-import { BookingsModule } from "./modules/bookings/bookings.module";
 import { TourBookingsModule } from "./modules/tour-bookings/tour-bookings.module";
-import { PaymentsModule } from "./modules/payments/payments.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { SearchModule } from "./modules/search/search.module";
@@ -66,9 +64,7 @@ import { AdminModule } from "./modules/admin/admin.module";
     ImagesModule,
     AvailabilityModule,
     PricingModule,
-    BookingsModule,
     TourBookingsModule,
-    PaymentsModule,
     ReviewsModule,
     RatingsModule,
     WishlistsModule,
