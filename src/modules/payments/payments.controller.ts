@@ -1,34 +1,92 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { PaymentsService } from './payments.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
+} from "@nestjs/common";
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+} from "@nestjs/swagger";
+import { PaymentsService } from "./payments.service";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import * as jwtPayloadInterface from "../../common/interfaces/jwt-payload.interface";
+import { Public } from "../../common/decorators/public.decorator";
+import { ClickCallbackDto, InitiatePaymentDto, InitiatePaymentResponseDto, PaymeCallbackDto, PaymentFilterDto, PaymentResponseDto } from "./dto/create-payment.dto";
 
-@Controller('payments')
+@ApiTags("Payments")
+@Controller("payments")
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentsService.create(createPaymentDto);
+  // ─── To'lovni boshlash ────────────────────────────────────────────────────
+
+  @Post("initiate")
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "To'lovni boshlash (Payme/Click URL olish)" })
+  @ApiResponse({ status: 201, type: InitiatePaymentResponseDto })
+  initiate(
+    @CurrentUser() user: jwtPayloadInterface.JwtPayload,
+    @Body() dto: InitiatePaymentDto,
+  ) {
+    return this.paymentsService.initiatePayment(user.sub, dto);
   }
 
-  @Get()
-  findAll() {
-    return this.paymentsService.findAll();
+  // ─── Foydalanuvchi to'lovlari ─────────────────────────────────────────────
+
+  @Get("my")
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Mening to'lovlarim" })
+  @ApiResponse({ status: 200, type: PaymentResponseDto, isArray: true })
+  findMyPayments(
+    @CurrentUser() user: jwtPayloadInterface.JwtPayload,
+    @Query() filter: PaymentFilterDto,
+  ) {
+    return this.paymentsService.findMyPayments(user.sub, filter);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentsService.findOne(+id);
+  @Get(":id")
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Bitta to'lov ma'lumoti" })
+  @ApiParam({ name: "id", type: String })
+  @ApiResponse({ status: 200, type: PaymentResponseDto })
+  findOne(@Param("id", ParseUUIDPipe) id: string) {
+    return this.paymentsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentsService.update(+id, updatePaymentDto);
+  // ─── Payme webhook (Public) ───────────────────────────────────────────────
+
+  @Post("payme/callback")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Payme webhook callback" })
+  paymeCallback(@Body() dto: PaymeCallbackDto) {
+    return this.paymentsService.handlePaymeCallback(dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentsService.remove(+id);
+  // ─── Click webhook (Public) ───────────────────────────────────────────────
+
+  @Post("click/prepare")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Click prepare callback" })
+  clickPrepare(@Body() dto: ClickCallbackDto) {
+    return this.paymentsService.handleClickCallback(dto);
+  }
+
+  @Post("click/complete")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Click complete callback" })
+  clickComplete(@Body() dto: ClickCallbackDto) {
+    return this.paymentsService.handleClickCallback(dto);
   }
 }

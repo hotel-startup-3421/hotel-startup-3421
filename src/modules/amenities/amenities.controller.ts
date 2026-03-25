@@ -1,34 +1,104 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AmenitiesService } from './amenities.service';
-import { CreateAmenityDto } from './dto/create-amenity.dto';
-import { UpdateAmenityDto } from './dto/update-amenity.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
+} from "@nestjs/common";
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+} from "@nestjs/swagger";
+import { AmenitiesService } from "./amenities.service";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { Public } from "../../common/decorators/public.decorator";
+import { UserRole } from "../../common/enums/user-role.enum";
+import { AmenityFilterDto, AmenityResponseDto, CreateAmenityDto, UpdateAmenityDto } from "./dto/create-amenity.dto";
 
-@Controller('amenities')
+@ApiTags("Amenities")
+@Controller("amenities")
 export class AmenitiesController {
   constructor(private readonly amenitiesService: AmenitiesService) {}
 
-  @Post()
-  create(@Body() createAmenityDto: CreateAmenityDto) {
-    return this.amenitiesService.create(createAmenityDto);
-  }
+  // ─── Public endpoints ─────────────────────────────────────────────────────
 
   @Get()
-  findAll() {
-    return this.amenitiesService.findAll();
+  @Public()
+  @ApiOperation({ summary: "Barcha qulayliklar ro'yxati (filter bilan)" })
+  @ApiResponse({ status: 200, type: AmenityResponseDto, isArray: true })
+  findAll(@Query() filter: AmenityFilterDto) {
+    return this.amenitiesService.findAll(filter);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.amenitiesService.findOne(+id);
+  @Get("by-category")
+  @Public()
+  @ApiOperation({ summary: "Qulayliklarni kategoriya bo'yicha guruhlash" })
+  @ApiResponse({
+    status: 200,
+    description: "{ general: [...], comfort: [...], food: [...] }",
+  })
+  findByCategory() {
+    return this.amenitiesService.findByCategory();
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAmenityDto: UpdateAmenityDto) {
-    return this.amenitiesService.update(+id, updateAmenityDto);
+  @Get(":id")
+  @Public()
+  @ApiOperation({ summary: "Bitta qulaylik ma'lumoti" })
+  @ApiParam({ name: "id", type: String })
+  @ApiResponse({ status: 200, type: AmenityResponseDto })
+  findOne(@Param("id", ParseUUIDPipe) id: string) {
+    return this.amenitiesService.findOne(id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.amenitiesService.remove(+id);
+  // ─── Admin endpoints ──────────────────────────────────────────────────────
+
+  @Post()
+  @ApiBearerAuth("JWT-auth")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "[ADMIN] Yangi qulaylik qo'shish" })
+  @ApiResponse({ status: 201, type: AmenityResponseDto })
+  create(@Body() dto: CreateAmenityDto) {
+    return this.amenitiesService.create(dto);
+  }
+
+  @Patch(":id")
+  @ApiBearerAuth("JWT-auth")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "[ADMIN] Qulaylikni tahrirlash" })
+  @ApiParam({ name: "id", type: String })
+  @ApiResponse({ status: 200, type: AmenityResponseDto })
+  update(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAmenityDto,
+  ) {
+    return this.amenitiesService.update(id, dto);
+  }
+
+  @Patch(":id/toggle")
+  @ApiBearerAuth("JWT-auth")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "[ADMIN] Qulaylikni aktiv/passiv qilish" })
+  @ApiParam({ name: "id", type: String })
+  @HttpCode(HttpStatus.OK)
+  toggleActive(@Param("id", ParseUUIDPipe) id: string) {
+    return this.amenitiesService.toggleActive(id);
+  }
+
+  @Delete(":id")
+  @ApiBearerAuth("JWT-auth")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "[ADMIN] Qulaylikni o'chirish" })
+  @ApiParam({ name: "id", type: String })
+  remove(@Param("id", ParseUUIDPipe) id: string) {
+    return this.amenitiesService.remove(id);
   }
 }
