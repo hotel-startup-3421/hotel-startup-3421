@@ -1,26 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Attraction } from './entities/attraction.entity';
 import { CreateAttractionDto } from './dto/create-attraction.dto';
 import { UpdateAttractionDto } from './dto/update-attraction.dto';
 
 @Injectable()
 export class AttractionsService {
-  create(createAttractionDto: CreateAttractionDto) {
-    return 'This action adds a new attraction';
+  constructor(
+    @InjectRepository(Attraction)
+    private attractionRepo: Repository<Attraction>,
+  ) {}
+
+  async create(dto: CreateAttractionDto) {
+    const attraction = this.attractionRepo.create(dto);
+    return this.attractionRepo.save(attraction);
   }
 
-  findAll() {
-    return `This action returns all attractions`;
+  async findAll() {
+    return this.attractionRepo.find({
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} attraction`;
+  async findOne(id: number) {
+    const attraction = await this.attractionRepo.findOne({
+      where: { id },
+    });
+
+    if (!attraction) {
+      throw new NotFoundException('Attraction not found');
+    }
+
+    return attraction;
   }
 
-  update(id: number, updateAttractionDto: UpdateAttractionDto) {
-    return `This action updates a #${id} attraction`;
+  async update(id: number, dto: UpdateAttractionDto) {
+    const attraction = await this.findOne(id);
+
+    Object.assign(attraction, dto);
+
+    return this.attractionRepo.save(attraction);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} attraction`;
+  async remove(id: number) {
+    const attraction = await this.findOne(id);
+
+    await this.attractionRepo.remove(attraction);
+
+    return { message: 'Attraction deleted successfully' };
   }
 }
