@@ -1,29 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToOne,
-  JoinColumn,
-} from "typeorm";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { User } from "../../users/entities/user.entity";
-import { Booking } from "../../bookings/entities/booking.entity";
-import { PaymentStatus } from "../../../common/enums/payment-status.enum";
-
-export enum PaymentProvider {
-  PAYME = "payme",
-  CLICK = "click",
-  STRIPE = "stripe",
-  MANUAL = "manual",
-}
-
-export enum PaymentMethod {
-  CARD = "card",
-  CASH = "cash",
-  BANK = "bank",
+export class Payment {
 }
 
 @Entity("payments")

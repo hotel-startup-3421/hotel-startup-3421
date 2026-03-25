@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
+
 import { AttractionsService } from './attractions.service';
 import { CreateAttractionDto } from './dto/create-attraction.dto';
 import { UpdateAttractionDto } from './dto/update-attraction.dto';
@@ -8,8 +18,8 @@ export class AttractionsController {
   constructor(private readonly attractionsService: AttractionsService) {}
 
   @Post()
-  create(@Body() createAttractionDto: CreateAttractionDto) {
-    return this.attractionsService.create(createAttractionDto);
+  create(@Body() dto: CreateAttractionDto) {
+    return this.attractionsService.create(dto);
   }
 
   @Get()
@@ -18,17 +28,20 @@ export class AttractionsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.attractionsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.attractionsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAttractionDto: UpdateAttractionDto) {
-    return this.attractionsService.update(+id, updateAttractionDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAttractionDto,
+  ) {
+    return this.attractionsService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.attractionsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.attractionsService.remove(id);
   }
 }
