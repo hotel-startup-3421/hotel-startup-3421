@@ -1,26 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TagEntity } from './entities/tag.entity';
 import { CreateTagDto } from './dto/create-tag.dto';
-import { UpdateTagDto } from './dto/update-tag.dto';
 
 @Injectable()
 export class TagsService {
-  create(createTagDto: CreateTagDto) {
-    return 'This action adds a new tag';
+  constructor(
+    @InjectRepository(TagEntity)
+    private readonly tagRepository: Repository<TagEntity>,
+  ) {}
+
+  async create(createTagDto: CreateTagDto) {
+    const tag = this.tagRepository.create(createTagDto);
+    return await this.tagRepository.save(tag);
   }
 
-  findAll() {
-    return `This action returns all tags`;
+  async findAllGrouped() {
+    const tags = await this.tagRepository.find();
+    
+    // Teglarni kategoriyalar bo'yicha guruhlash
+    return tags.reduce((acc, tag) => {
+      const category = tag.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(tag);
+      return acc;
+    }, {});
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} tag`;
-  }
-
-  update(id: number, updateTagDto: UpdateTagDto) {
-    return `This action updates a #${id} tag`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} tag`;
+  async remove(id: number) {
+    const result = await this.tagRepository.delete(id);
+    if (result.affected === 0) throw new NotFoundException('Teg topilmadi');
+    return { success: true };
   }
 }
