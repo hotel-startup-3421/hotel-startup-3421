@@ -1,23 +1,42 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
-
-@Entity('search_historiy')
+@Entity('search_history')
 export class SearchEntity {
-    @ApiProperty({ example:1 , description :'ID'})
-    @PrimaryGeneratedColumn()
-    id:number
+  @ApiProperty({ example: 1 })
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @ApiProperty({example: 'Toshkent tours', description:'Qidiruv kalit sozi'})
-    @Column({ type:'varchar', length:255})
-    query: string
+  @ApiProperty({ example: 'Tours' })
+  @Column()
+  query: string;
 
+  @CreateDateColumn()
+  createdAt: Date;
+}
 
-    @ApiProperty({example:'2026-03-16T11:24:27Z'})
-    @CreateDateColumn()
+@Entity('tags')
+export class TagEntity {
+  @ApiProperty({ example: 1 })
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    createdAt: Date;
+  @ApiProperty({ example: 'Tarixiy' })
+  @Column()
+  name: string;
 
+  @ApiProperty({ example: 'tarixiy' })
+  @Column({ unique: true })
+  slug: string;
 
+  @ApiProperty({ example: '#FF5733' })
+  @Column({ default: '#FF5733' })
+  color: string;
 
+  @ApiProperty({ example: 'Joylashuv turi' })
+  @Column()
+  category: string; // Masalan: "Joylashuv turi", "Narx", "Kimlar uchun"
+
+  @CreateDateColumn()
+  createdAt: Date;
 }
