@@ -29,6 +29,8 @@ import { WishlistsModule } from "./modules/wishlists/wishlists.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { ChatModule } from "./modules/chat/chat.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
+import { BookingsModule } from "./modules/bookings/bookings.module";
 
 @Module({
   imports: [
@@ -73,6 +75,8 @@ import { AdminModule } from "./modules/admin/admin.module";
     SearchModule,
     CouponsModule,
     AdminModule,
+    PaymentsModule,
+    BookingsModule,
   ],
 
   controllers: [],

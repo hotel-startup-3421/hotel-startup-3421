@@ -22,7 +22,7 @@ export class TagEntity {
 
   @ApiProperty({ example: 'Joylashuv turi', description: 'Kategoriya' })
   @Column()
-  category: string; // "Narx", "Kimlar uchun", "Xususiyat"
+  category: string;
 
   @CreateDateColumn()
   createdAt: Date;
