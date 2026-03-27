@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TagEntity } from './entities/tag.entity';
 import { CreateTagDto } from './dto/create-tag.dto';
+import { Tag } from './entities/tag.entity';
 
 @Injectable()
 export class TagsService {
   constructor(
-    @InjectRepository(TagEntity)
-    private readonly tagRepository: Repository<TagEntity>,
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
   ) {}
 
   async create(createTagDto: CreateTagDto) {

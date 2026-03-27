@@ -1,9 +1,8 @@
-export class Tag {}
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
 @Entity('tags')
-export class TagEntity {
+export class Tag {
   @ApiProperty({ example: 1, description: 'ID' })
   @PrimaryGeneratedColumn()
   id: number;
