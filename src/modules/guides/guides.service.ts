@@ -1,26 +1,55 @@
 import { Injectable } from '@nestjs/common';
-import { CreateGuideDto } from './dto/create-guide.dto';
-import { UpdateGuideDto } from './dto/update-guide.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Guide } from './entities/guide.entity';
 
 @Injectable()
 export class GuidesService {
-  create(createGuideDto: CreateGuideDto) {
-    return 'This action adds a new guide';
+  constructor(
+    @InjectRepository(Guide)
+    private readonly guideRepo: Repository<Guide>,
+  ) {}
+
+  findAll(filters?: { city?: string; language?: string; price?: number }) {
+    const qb = this.guideRepo.createQueryBuilder('guide')
+      .leftJoinAndSelect('guide.location', 'location')
+      .leftJoinAndSelect('guide.tags', 'tags');
+
+    if (filters?.city) qb.andWhere('location.city = :city', { city: filters.city });
+    if (filters?.language) qb.andWhere(':language = ANY (guide.languages)', { language: filters.language });
+    if (filters?.price) qb.andWhere('guide.pricePerDay <= :price', { price: filters.price });
+
+    return qb.getMany();
   }
 
-  findAll() {
-    return `This action returns all guides`;
+  findOne(id: string) {
+    return this.guideRepo.findOne({
+      where: { id },
+      relations: ['location', 'user', 'tags'],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} guide`;
+  findBySlug(slug: string) {
+    return this.guideRepo.findOne({
+      where: { slug },
+      relations: ['location', 'user', 'tags'],
+    });
   }
 
-  update(id: number, updateGuideDto: UpdateGuideDto) {
-    return `This action updates a #${id} guide`;
+  create(guide: Partial<Guide>) {
+    const newGuide = this.guideRepo.create(guide);
+    return this.guideRepo.save(newGuide);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} guide`;
+  update(id: string, updateData: Partial<Guide>) {
+    return this.guideRepo.update(id, updateData);
+  }
+
+  verify(id: string) {
+    return this.guideRepo.update(id, { isVerified: true });
+  }
+
+  remove(id: string) {
+    return this.guideRepo.delete(id);
   }
 }

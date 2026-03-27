@@ -1,11 +1,21 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import { 
+  Entity, 
+  Column, 
+  PrimaryGeneratedColumn, 
+  CreateDateColumn, 
+  ManyToMany 
+} from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
+import { Restaurant } from "../../restaurants/entities/restaurant.entity";
 
 @Entity('tags')
 export class Tag {
-  @ApiProperty({ example: 1, description: 'ID' })
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ApiProperty({ 
+    example: '550e8400-e29b-41d4-a716-446655440000', 
+    description: 'ID (UUID formatida)' 
+  })
+  @PrimaryGeneratedColumn('uuid') 
+  id: string; 
 
   @ApiProperty({ example: 'Tarixiy', description: 'Teg nomi' })
   @Column()
@@ -22,6 +32,9 @@ export class Tag {
   @ApiProperty({ example: 'Joylashuv turi', description: 'Kategoriya' })
   @Column()
   category: string;
+
+  @ManyToMany(() => Restaurant, (restaurant) => restaurant.tags)
+  restaurants: Restaurant[];
 
   @CreateDateColumn()
   createdAt: Date;
