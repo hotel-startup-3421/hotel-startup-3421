@@ -1,34 +1,42 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { RoomsService } from './rooms.service';
-import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+} from "@nestjs/common";
+import { RoomsService } from "./rooms.service";
+import { CreateRoomDto } from "./dto/create-room.dto";
+import { UpdateRoomDto } from "./dto/update-room.dto";
 
-@Controller('rooms')
+@Controller("rooms")
 export class RoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(private readonly service: RoomsService) {}
+
+  @Get("property/:propertyId")
+  findByProperty(@Param("propertyId") propertyId: number) {
+    return this.service.findByProperty(propertyId);
+  }
+
+  @Get(":id")
+  findOne(@Param("id") id: number) {
+    return this.service.findOne(id);
+  }
 
   @Post()
-  create(@Body() createRoomDto: CreateRoomDto) {
-    return this.roomsService.create(createRoomDto);
+  create(@Body() dto: CreateRoomDto) {
+    return this.service.create(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.roomsService.findAll();
+  @Patch(":id")
+  update(@Param("id") id: number, @Body() dto: UpdateRoomDto) {
+    return this.service.update(id, dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomsService.update(+id, updateRoomDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.roomsService.remove(+id);
+  @Delete(":id")
+  remove(@Param("id") id: number) {
+    return this.service.remove(id);
   }
 }

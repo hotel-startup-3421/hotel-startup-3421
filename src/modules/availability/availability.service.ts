@@ -1,26 +1,76 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, Between } from "typeorm";
+import { Availability } from "./entities/availability.entity";
+import { CreateAvailabilityDto } from "./dto/create-availability.dto";
+import { UpdateAvailabilityDto } from "./dto/update-availability.dto";
+import { Room } from "../rooms/entities/room.entity";
 
 @Injectable()
 export class AvailabilityService {
-  create(createAvailabilityDto: CreateAvailabilityDto) {
-    return 'This action adds a new availability';
+
+  constructor(
+    @InjectRepository(Availability)
+    private availabilityRepo: Repository<Availability>,
+
+    @InjectRepository(Room)
+    private roomRepo: Repository<Room>,
+  ) {}
+
+  async create(dto: CreateAvailabilityDto) {
+
+    const room = await this.roomRepo.findOne({
+      where: { id: dto.roomId },
+    });
+
+    if (!room) {
+      throw new NotFoundException("Room not found");
+    }
+
+    const availability = this.availabilityRepo.create({
+      date: dto.date,
+      price: dto.price,
+      room,
+    });
+
+    return this.availabilityRepo.save(availability);
   }
 
-  findAll() {
-    return `This action returns all availability`;
+  findByRoom(roomId: number, startDate: Date, endDate: Date) {
+
+    return this.availabilityRepo.find({
+      where: {
+        room: { id: roomId },
+        date: Between(startDate, endDate),
+      },
+      relations: ["room"],
+    });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} availability`;
+
+    return this.availabilityRepo.findOne({
+      where: { id },
+      relations: ["room"],
+    });
   }
 
-  update(id: number, updateAvailabilityDto: UpdateAvailabilityDto) {
-    return `This action updates a #${id} availability`;
+  async update(id: number, dto: UpdateAvailabilityDto) {
+
+    const availability = await this.availabilityRepo.findOne({
+      where: { id },
+    });
+
+    if (!availability) {
+      throw new NotFoundException("Availability not found");
+    }
+
+    Object.assign(availability, dto);
+
+    return this.availabilityRepo.save(availability);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} availability`;
+    return this.availabilityRepo.delete(id);
   }
 }
