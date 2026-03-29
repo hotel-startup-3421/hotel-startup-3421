@@ -1,26 +1,63 @@
-import { Injectable } from '@nestjs/common';
-import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Room } from "./entities/room.entity";
+import { CreateRoomDto } from "./dto/create-room.dto";
+import { UpdateRoomDto } from "./dto/update-room.dto";
+import { Property } from "../properties/entities/property.entity";
 
 @Injectable()
 export class RoomsService {
-  create(createRoomDto: CreateRoomDto) {
-    return 'This action adds a new room';
+  constructor(
+    @InjectRepository(Room)
+    private roomRepo: Repository<Room>,
+
+    @InjectRepository(Property)
+    private propertyRepo: Repository<Property>,
+  ) {}
+
+  async create(dto: CreateRoomDto) {
+    const property = await this.propertyRepo.findOne({
+      where: { id: dto.propertyId },
+    });
+
+    if (!property) throw new NotFoundException("Property not found");
+
+    const room = this.roomRepo.create({
+      ...dto,
+      property,
+    });
+
+    return this.roomRepo.save(room);
   }
 
-  findAll() {
-    return `This action returns all rooms`;
+  findByProperty(propertyId: number) {
+    return this.roomRepo.find({
+      where: {
+        property: { id: propertyId },
+      },
+      relations: ["property"],
+    });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} room`;
+    return this.roomRepo.findOne({
+      where: { id },
+      relations: ["property"],
+    });
   }
 
-  update(id: number, updateRoomDto: UpdateRoomDto) {
-    return `This action updates a #${id} room`;
+  async update(id: number, dto: UpdateRoomDto) {
+    const room = await this.roomRepo.findOne({ where: { id } });
+
+    if (!room) throw new NotFoundException("Room not found");
+
+    Object.assign(room, dto);
+
+    return this.roomRepo.save(room);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} room`;
+    return this.roomRepo.delete(id);
   }
 }

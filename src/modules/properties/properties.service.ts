@@ -1,26 +1,49 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePropertyDto } from './dto/create-property.dto';
-import { UpdatePropertyDto } from './dto/update-property.dto';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Property } from "./entities/property.entity";
+import { CreatePropertyDto } from "./dto/create-property.dto";
+import { UpdatePropertyDto } from "./dto/update-property.dto";
 
 @Injectable()
 export class PropertiesService {
-  create(createPropertyDto: CreatePropertyDto) {
-    return 'This action adds a new property';
+  constructor(
+    @InjectRepository(Property)
+    private propertyRepo: Repository<Property>,
+  ) {}
+
+  create(dto: CreatePropertyDto) {
+    const property = this.propertyRepo.create(dto);
+    return this.propertyRepo.save(property);
   }
 
   findAll() {
-    return `This action returns all properties`;
+    return this.propertyRepo.find();
+  }
+
+  findFeatured() {
+    return this.propertyRepo.find({
+      where: { isFeatured: true },
+    });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} property`;
+    return this.propertyRepo.findOne({ where: { id } });
   }
 
-  update(id: number, updatePropertyDto: UpdatePropertyDto) {
-    return `This action updates a #${id} property`;
+  findBySlug(slug: string) {
+    return this.propertyRepo.findOne({ where: { slug } });
+  }
+
+  update(id: number, dto: UpdatePropertyDto) {
+    return this.propertyRepo.update(id, dto);
+  }
+
+  publish(id: number) {
+    return this.propertyRepo.update(id, { isActive: true });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} property`;
+    return this.propertyRepo.delete(id);
   }
 }
