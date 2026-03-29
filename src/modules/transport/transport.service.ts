@@ -1,26 +1,43 @@
 import { Injectable } from '@nestjs/common';
-import { CreateTransportDto } from './dto/create-transport.dto';
-import { UpdateTransportDto } from './dto/update-transport.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Transport } from './entities/transport.entity';
 
 @Injectable()
 export class TransportService {
-  create(createTransportDto: CreateTransportDto) {
-    return 'This action adds a new transport';
+  constructor(
+    @InjectRepository(Transport)
+    private readonly transportRepo: Repository<Transport>,
+  ) {}
+
+  findAll(filters?: { type?: string; city?: string }) {
+    const qb = this.transportRepo.createQueryBuilder('transport')
+      .leftJoinAndSelect('transport.location', 'location')
+      .leftJoinAndSelect('transport.tags', 'tags');
+
+    if (filters?.type) qb.andWhere('transport.type = :type', { type: filters.type });
+    if (filters?.city) qb.andWhere('location.city = :city', { city: filters.city });
+
+    return qb.getMany();
   }
 
-  findAll() {
-    return `This action returns all transport`;
+  findOne(id: string) {
+    return this.transportRepo.findOne({
+      where: { id },
+      relations: ['location', 'user', 'tags'],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} transport`;
+  create(transport: Partial<Transport>) {
+    const newTransport = this.transportRepo.create(transport);
+    return this.transportRepo.save(newTransport);
   }
 
-  update(id: number, updateTransportDto: UpdateTransportDto) {
-    return `This action updates a #${id} transport`;
+  update(id: string, data: Partial<Transport>) {
+    return this.transportRepo.update(id, data);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} transport`;
+  remove(id: string) {
+    return this.transportRepo.delete(id);
   }
 }
