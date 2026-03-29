@@ -1,34 +1,33 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { WishlistsService } from './wishlists.service';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
-import { UpdateWishlistDto } from './dto/update-wishlist.dto';
 
+@ApiTags('Wishlists')
+@ApiBearerAuth()
 @Controller('wishlists')
 export class WishlistsController {
-  constructor(private readonly wishlistsService: WishlistsService) {}
+  constructor(private readonly service: WishlistsService) {}
 
   @Post()
-  create(@Body() createWishlistDto: CreateWishlistDto) {
-    return this.wishlistsService.create(createWishlistDto);
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Wishlistga qo\'shish' })
+  create(@Body() dto: CreateWishlistDto, @Req() req) {
+    return this.service.create(dto, req.user.id);
   }
 
   @Get()
-  findAll() {
-    return this.wishlistsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.wishlistsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWishlistDto: UpdateWishlistDto) {
-    return this.wishlistsService.update(+id, updateWishlistDto);
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'O\'zining wishlistlarini ko\'rish' })
+  findAll(@Req() req) {
+    return this.service.findAll(req.user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.wishlistsService.remove(+id);
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Wishlistdan o\'chirish' })
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.service.remove(id, req.user.id);
   }
 }

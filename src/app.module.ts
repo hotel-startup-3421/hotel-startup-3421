@@ -31,9 +31,16 @@ import { ChatModule } from "./modules/chat/chat.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { BookingsModule } from "./modules/bookings/bookings.module";
+import { CommentsModule } from "./modules/comments/comments.module"; 
 
 @Module({
   imports: [
+    MailModule,
+    AdminModule,
+    PaymentsModule,
+    BookingsModule,
+    CommentsModule,
+
     ConfigModule.forRoot({
       isGlobal: true,
       load: [

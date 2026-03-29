@@ -75,6 +75,7 @@ otpExpires: Date | null;
 
   @UpdateDateColumn()
   updatedAt: Date;
+    wishlists: any;
 
   // relations — entity lar yozilgach commentdan chiqariladi
   // @OneToMany(() => Property, (property) => property.host)

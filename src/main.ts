@@ -59,7 +59,7 @@ async function bootstrap() {
 
   await app.listen(PORT);
 
-  console.log(`📄 Server ishlayabdi: http://localhost:${PORT}/docs`);
+  console.log(`🚀 Server ishlayabdi: http://localhost:${PORT}/docs`);
 }
 
 bootstrap();
